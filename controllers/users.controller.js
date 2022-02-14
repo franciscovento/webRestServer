@@ -1,43 +1,82 @@
 const { response, request } = require('express');
-
-exports.usuariosGet = ( req = request, res = response) => {
-
-  const { q, nombre, apikey } = req.query;
+// const bcrypt = require('bcryptjs');
 
 
-  res.json({
-    msg: 'get Api from controller',
-    q,
-    nombre, 
-    apikey
-  });
-};
+const Usuario = require('../models/usuario.model');
+const { encriptarPassword } = require('../helpers/db-validator');
 
-exports.usuariosPost = ( req = request, res = response ) => {
+exports.usuariosGet = async ( req = request, res = response) => {
 
-  const { nombre, edad } = req.body;
+  const { limite = 5, desde = 0 } = req.query;
+  // const usuarios = await Usuario.find({ estado: true })
+  //   .skip( desde )
+  //   .limit( limite )
 
-  res.json({
-    msg: 'post Api from controller', 
-    nombre, 
-    edad
-  });
-};
+  // const total = await Usuario.countDocuments({ estado: true });
 
-exports.usuariosPut = ( req = request, res = response ) => {
-
-
-  const id = req.params.id;
+  const [ total, usuarios ] = await Promise.all([
+    Usuario.countDocuments({ estado: true }),
+    Usuario.find({ estado: true })
+        .skip( desde )
+        .limit( limite )
+  ])
 
   res.json({
-    msg: 'put Api from controller',
-    id 
+    total,
+    current: usuarios.length,
+    usuarios
+  
 
   });
 };
 
-exports.usuariosDelete = ( req, res = response ) => {
+exports.usuariosPost = async ( req = request, res = response ) => {
+
+  const { nombre, correo, password, rol } = req.body;
+  const usuario = new Usuario( { nombre, correo, password, rol } );
+
+  // ! Encriptar contrasena
+  // const salt = bcrypt.genSaltSync();
+  // usuario.password = bcrypt.hashSync( password, salt );
+
+  usuario.password = await encriptarPassword(password);
+
+  // ! Guardar en DB
+  await usuario.save();
+
+  res.json({ 
+    usuario
+  });
+};
+
+exports.usuariosPut = async ( req = request, res = response ) => {
+
+  const { id } = req.params;
+  const { _id, password, google, correo, ...resto } = req.body;
+
+  // Validar contra base de datos
+if ( password ) { 
+  resto.password = await encriptarPassword(password);
+}
+  
+  const usuario = await Usuario.findByIdAndUpdate(id, resto);
+
   res.json({
-    msg: 'delete Api from controller'
+    usuario,
+
+  });
+};
+
+exports.usuariosDelete = async ( req, res = response ) => {
+
+  const { id } = req.params;
+
+  // Borrar fisicamente
+  // const usuario = await Usuario.findByIdAndDelete( id );
+
+  const usuario = await Usuario.findByIdAndUpdate( id, { estado: false} )
+
+  res.json({
+    msg: `Se elimino el usuario con id: ${usuario.id}`
   })
 }
