@@ -62,14 +62,15 @@ if ( password ) {
   const usuario = await Usuario.findByIdAndUpdate(id, resto);
 
   res.json({
-    usuario,
-
+    usuario
   });
 };
 
 exports.usuariosDelete = async ( req, res = response ) => {
 
   const { id } = req.params;
+  
+  const usuarioAutenticado = req.usuarioAutenticado;
 
   // Borrar fisicamente
   // const usuario = await Usuario.findByIdAndDelete( id );
@@ -77,6 +78,7 @@ exports.usuariosDelete = async ( req, res = response ) => {
   const usuario = await Usuario.findByIdAndUpdate( id, { estado: false} )
 
   res.json({
-    msg: `Se elimino el usuario con id: ${usuario.id}`
+    usuario,
+    usuarioAutenticado
   })
 }
