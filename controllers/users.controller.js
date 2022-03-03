@@ -43,7 +43,7 @@ exports.usuariosPost = async ( req = request, res = response ) => {
 
   // ! Guardar en DB
   await usuario.save();
-
+  
   res.json({ 
     usuario
   });
